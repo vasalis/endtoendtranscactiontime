@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "storage1": {
+      "type": "storage.emulator",
+      "connectionId": "AzureWebJobsStorage"
+    },
+    "appInsights1": {
+      "secretStore": null,
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/microsoft.insights/components/EndToEndAI",
+      "type": "appInsights.azure",
+      "connectionId": "APPLICATIONINSIGHTS_CONNECTION_STRING"
+    }
+  }
+}

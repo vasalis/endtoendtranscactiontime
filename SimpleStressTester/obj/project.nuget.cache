@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "eItP1Q0uQwoZQQqweIIGVZC1BgqVu73Ip0fiotHp+e1K1yiNucGR1XGE1KvT4vXpRZXLIplHmrxOxQvTP25Esw==",
+  "success": true,
+  "projectFilePath": "C:\\01_SourceCode\\Demos\\EndToEndTranscactionTime\\SimpleStressTester\\SimpleStressTester.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\vasalis\\.nuget\\packages\\microsoft.applicationinsights\\2.20.0\\microsoft.applicationinsights.2.20.0.nupkg.sha512",
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\newtonsoft.json\\11.0.2\\newtonsoft.json.11.0.2.nupkg.sha512",
+    "C:\\Users\\vasalis\\.nuget\\packages\\system.diagnostics.diagnosticsource\\5.0.0\\system.diagnostics.diagnosticsource.5.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <ApplicationInsightsResourceId>/subscriptions/66b89049-c2e6-4d7f-b2cb-68363235fe63/resourceGroups/EndToEnd_RG/providers/microsoft.insights/components/EndToEndAI</ApplicationInsightsResourceId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.15.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.28.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EndToEndModels\EndToEndModels.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+</Project>

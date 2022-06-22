@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "kgLPUp8PtFTQAnqTcix1XwG5lu7GmQbZsrQRnpnIKTwybKYtA/ed2NHhny/X8e5uqY3yNl2TEF7S3DIOWxmstQ==",
+  "success": true,
+  "projectFilePath": "C:\\01_SourceCode\\Demos\\EndToEndTranscactionTime\\EndToEndModels\\EndToEndModels.csproj",
+  "expectedPackageFiles": [
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\newtonsoft.json\\11.0.2\\newtonsoft.json.11.0.2.nupkg.sha512"
+  ],
+  "logs": []
+}
