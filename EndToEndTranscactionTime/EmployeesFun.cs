@@ -110,7 +110,7 @@ namespace EndToEndTranscactionTime
             }            
         }
 
-        private async Task<List<EmployeeEntity>> GetTopEmployees()
+        private async Task<string> GetTopEmployees()
         {
             List<EmployeeEntity> lResults = new List<EmployeeEntity>();
 
@@ -129,7 +129,7 @@ namespace EndToEndTranscactionTime
                 }                
             }
 
-            return lResults;
+            return JsonConvert.SerializeObject(lResults);
         }
     }
 }

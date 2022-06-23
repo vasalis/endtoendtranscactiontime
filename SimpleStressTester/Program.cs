@@ -1,4 +1,5 @@
 ﻿using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SimpleStressTester
@@ -20,22 +22,25 @@ namespace SimpleStressTester
             Console.WriteLine("----- Simple Stress Tester -----");
             Console.WriteLine("Initializing...");
 
-            int lEmployeesToCreate = 10000;
-            string lDateTimeCreated = DateTime.UtcNow.ToString();
-            List<StringContent> lEmployees = new List<StringContent>();
+            int lEmployeesToCreate = 20000;
 
-            string lUseCaseName = "Localhost Test";
-            string lUseCaseGetUrl = "http://localhost:7258/api/InitTest";
-            string lUseCaseFinishUrl = "http://localhost:7258/api/FinishTest";
-            string lUseCasePostUrl = "http://localhost:7258/api/AddEmployee";
+            //string lUseCaseName = "Localhost Test";
+            //string lBaseUrl = "http://localhost:7258/api";            
 
-            //string lUseCaseName = "AzFunctions Test";
-            //string lUseCaseGetUrl = "https://endtoendtranscactiontime.azurewebsites.net/api/InitTest";
-            //string lUseCasePostUrl = "https://endtoendtranscactiontime.azurewebsites.net/api/AddEmployee";
+            string lUseCaseName = "AzFunctions Test";
+            string lBaseUrl = "https://endtoendtranscactiontime.azurewebsites.net/api";
 
             //string lUseCaseName = "Azure Front Door Test";
-            //string lUseCaseGetUrl = "https://endtoendfun-c2evacc6gge2feea.z01.azurefd.net/api/InitTest";
-            //string lUseCasePostUrl = "https://endtoendfun-c2evacc6gge2feea.z01.azurefd.net/api/AddEmployee";
+            //string lBaseUrl = "https://endtoendfun-c2evacc6gge2feea.z01.azurefd.net/api";
+
+
+            string lUseCaseInitTestUrl = $"{lBaseUrl}/InitTest";
+            string lUseCaseFinishUrl = $"{lBaseUrl}/FinishTest";
+            string lUseCasePostUrl = $"{lBaseUrl}/AddEmployee";
+            string lUseCaseGetUrl = $"{lBaseUrl}/GetEmployees";
+
+
+            Console.WriteLine($"Use case is: {lUseCaseName}, url is: {lBaseUrl}");
 
             // Create the DI container.
             IServiceCollection services = new ServiceCollection();
@@ -61,11 +66,31 @@ namespace SimpleStressTester
 
             var lHttpClient = new HttpClient();
 
-            await InitTest(lHttpClient, lUseCaseGetUrl);
-            
-            Console.WriteLine($"Creating {lEmployeesToCreate} new Employee Objects");
+            await InitTest(lHttpClient, lUseCaseInitTestUrl);
 
-            for (int i = 0; i < lEmployeesToCreate; i++)
+            var lEmployees = CreateNewEmployees(lEmployeesToCreate);
+
+            using (var lTel = lTelemetryClient.StartOperation<DependencyTelemetry>("RUN POST EMPL TEST"))
+            {
+                //RunPostEmployeesTest(lUseCasePostUrl, lEmployees, lUseCaseName, lTelemetryClient, lHttpClient);
+            }
+
+            using (var lTel = lTelemetryClient.StartOperation<DependencyTelemetry>("RUN GET EMPL TEST"))
+            {
+                RunGetEmployeesTest(lUseCaseGetUrl, lEmployeesToCreate, lUseCaseName, lTelemetryClient, lHttpClient);
+            }
+
+            // await FinishTest(lHttpClient, lUseCaseFinishUrl);
+        }
+
+        private static List<StringContent> CreateNewEmployees(int aEmployeesToCreate)
+        {
+            Console.WriteLine($"Creating {aEmployeesToCreate} new Employee Objects");
+
+            List<StringContent> lEmployees = new List<StringContent>();
+            string lDateTimeCreated = DateTime.UtcNow.ToString();            
+
+            for (int i = 0; i < aEmployeesToCreate; i++)
             {
                 EmployeeEntity lEmployee = new EmployeeEntity()
                 {
@@ -81,14 +106,25 @@ namespace SimpleStressTester
                 lEmployees.Add(lData);
             }
 
-            Console.WriteLine($"Sending {lEmployeesToCreate} new Employee Objects for use case: {lUseCaseName}");            
-            
-            var lRequestTime = Stopwatch.StartNew();            
-            await PostEmployeesAsync(lUseCasePostUrl, lEmployees, lUseCaseName, lTelemetryClient, lHttpClient);
-            lRequestTime.Stop();
-            Console.WriteLine($"Finished in {lRequestTime.ElapsedMilliseconds} msecs.");
+            return lEmployees; 
+        }
 
-            await FinishTest(lHttpClient, lUseCaseFinishUrl);
+        private static void RunPostEmployeesTest(string aEndPointUrl, List<StringContent> aEmployees, string aUseCaseName, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
+        {
+            Console.WriteLine($"Sending {aEmployees.Count} new Employee Objects for use case: {aUseCaseName}");
+            var lRequestTime = Stopwatch.StartNew();
+            PostEmployeesWithTasks(aEndPointUrl, aEmployees, aTelemetryClient, aHttpClient);
+            lRequestTime.Stop();
+            Console.WriteLine($"POST finished in {lRequestTime.ElapsedMilliseconds} msecs.");
+        }
+
+        private static void RunGetEmployeesTest(string aEndPointUrl, int aIterations, string aUseCaseName, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
+        {
+            Console.WriteLine($"Executing {aIterations} GET(s) for use case: {aUseCaseName}");
+            var lRequestTime = Stopwatch.StartNew();
+            GetEmployeesAsync(aEndPointUrl, aIterations, aTelemetryClient, aHttpClient);
+            lRequestTime.Stop();
+            Console.WriteLine($"GET finished in {lRequestTime.ElapsedMilliseconds} msecs.");
         }
 
         private static async Task InitTest(HttpClient aHttpClient, String aUrl)
@@ -119,22 +155,127 @@ namespace SimpleStressTester
             }
             else
             {
-                Console.WriteLine($"FinishTest was ok. Response was: {lResponse.Content.ReadAsStringAsync()}");
+                var lReply = await lResponse.Content.ReadAsStringAsync();
+                Console.WriteLine($"FinishTest was ok. Response was: {lReply}");
             }
         }
 
 
         private static async Task PostEmployeesAsync(string aEndPointUrl, List<StringContent> aEmployees, string UseCaseName, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
         {
-            await Task.Run(() => Parallel.ForEach(aEmployees, async lEmployee =>
+            foreach (var lEmployee in aEmployees)
             {
-                var lRequestTime = Stopwatch.StartNew();
-                var result = await aHttpClient.PostAsync(aEndPointUrl, lEmployee);
-                lRequestTime.Stop();
+                try
+                {                    
+                    var result = await aHttpClient.PostAsync(aEndPointUrl, lEmployee);                    
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed: {ex.Message}");
+                }
+            }
+        }
 
-                aTelemetryClient.TrackMetric(UseCaseName, lRequestTime.ElapsedMilliseconds);
-                Console.WriteLine($"Took: {lRequestTime.ElapsedMilliseconds}");
-            }));
+        private static void PostEmployeesWithTasks(string aEndPointUrl, List<StringContent> aEmployees, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
+        {
+            int lTasksCount = 100;
+            int lIndex = 0;
+
+            List<StringContent[]> lBigList = new List<StringContent[]>();
+            List<StringContent> lSubList = new List<StringContent>();
+            foreach (var lEmployee in aEmployees)
+            {
+                if (lIndex % lTasksCount == 0 && lSubList.Count > 0)
+                {
+                    lBigList.Add(lSubList.ToArray());
+                    lSubList = new List<StringContent>();
+                }
+
+                lSubList.Add(lEmployee);
+                lIndex++;
+            }
+
+            var lTasks = new List<Task>();
+            
+
+            foreach(var lSub in lBigList)
+            {
+                lTasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        foreach(var lEmployee in lSub)
+                        {   
+                            var result = await aHttpClient.PostAsync(aEndPointUrl, lEmployee);
+                        }
+                    }
+                    catch (Exception ex)
+                    {   
+                        aTelemetryClient.TrackException(ex);
+                        Console.WriteLine($"Post failed: {ex.Message}");
+                    }
+                }));
+            }
+            
+            try
+            {   
+                Task.WaitAll(lTasks.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Wait failed: {ex.Message}");
+            }
+        }
+
+        private static void GetEmployeesAsync(string aEndPointUrl, int aIterations, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
+        {
+            int lTasksCount = 100;
+            int lIndex = 0;
+
+            List<int[]> lBigList = new List<int[]>();
+            List<int> lSubList = new List<int>();
+            for(int i = 0; i< aIterations; i++)
+            {
+                if (lIndex % lTasksCount == 0 && lSubList.Count > 0)
+                {
+                    lBigList.Add(lSubList.ToArray());
+                    lSubList = new List<int>();
+                }
+
+                lSubList.Add(i);
+                lIndex++;
+            }
+
+            var lTasks = new List<Task>();
+
+
+            foreach (var lSub in lBigList)
+            {
+                lTasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        foreach (var lEmployee in lSub)
+                        {
+                            var result = await aHttpClient.GetAsync(aEndPointUrl);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        aTelemetryClient.TrackException(ex);
+                        Console.WriteLine($"Get failed: {ex.Message}");
+                    }
+                }));
+            }
+
+            try
+            {
+                Task.WaitAll(lTasks.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Wait failed: {ex.Message}");
+            }                        
         }
     }
 }
