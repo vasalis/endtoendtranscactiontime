@@ -23,13 +23,59 @@ namespace EndToEndTranscactionTime
             _myDb = aDbContainer;
         }
 
+        [FunctionName("InitTest")]
+        public async Task<IActionResult> RunInitTest(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            try
+            {
+                string lEmployeeId = Guid.NewGuid().ToString();
+                EmployeeEntity lEmployee = new EmployeeEntity()
+                {
+                    Id = lEmployeeId,
+                    FirstName = $"John",
+                    LastName = $"Doe",
+                    DateOfBirth = DateTime.Now
+                };
+
+                await _myDb.CreateItemAsync(lEmployee);
+                var lResult = await this._myDb.ReadItemAsync<EmployeeEntity>(lEmployeeId, new PartitionKey(lEmployeeId));                
+
+                return new OkObjectResult("Ok");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Could not InitTest. Exception thrown: {ex.Message}");
+
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }            
+        }
+
+        [FunctionName("FinishTest")]
+        public async Task<IActionResult> RunFinishTest(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            try
+            {
+                await _myDb.DeleteContainerAsync();
+
+                return new OkObjectResult("Container deleted ok.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Could not RunFinishTest. Exception thrown: {ex.Message}");
+
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
         [FunctionName("AddEmployee")]
         public async Task<IActionResult> RunAddEmployee(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            IActionResult lReturnValue = null;
-
             try
             {
                 string lRrequestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -38,15 +84,13 @@ namespace EndToEndTranscactionTime
 
                 await _myDb.CreateItemAsync(lEmployee);
 
-                lReturnValue = new OkObjectResult("Ok");
+                return new OkObjectResult("Ok");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Could not create new Employee. Exception thrown: {ex.Message}");
-                lReturnValue = new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
-
-            return new OkObjectResult(lReturnValue);
         }
 
         [FunctionName("GetEmployees")]
@@ -54,37 +98,38 @@ namespace EndToEndTranscactionTime
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
             ILogger log)
         {
-            IActionResult returnValue = null;
-
             try
             {
-                List<EmployeeEntity> lResults = new List<EmployeeEntity>();
-
-                QueryDefinition queryDefinition = new QueryDefinition("select top 100 * from Employees");
-
-                using (FeedIterator<EmployeeEntity> feedIterator = this._myDb.GetItemQueryIterator<EmployeeEntity>(
-                    queryDefinition,
-                    null))
-                {
-                    while (feedIterator.HasMoreResults)
-                    {
-                        foreach (var item in await feedIterator.ReadNextAsync())
-                        {
-                            lResults.Add(item);
-                        }
-                    }
-
-                    returnValue = new OkObjectResult(lResults);
-                }
+                return new OkObjectResult(await GetTopEmployees());
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Could not Get Employees. Exception thrown: {ex.Message}");
 
-                returnValue = new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }            
+        }
 
-            return new OkObjectResult(returnValue);
+        private async Task<List<EmployeeEntity>> GetTopEmployees()
+        {
+            List<EmployeeEntity> lResults = new List<EmployeeEntity>();
+
+            QueryDefinition queryDefinition = new QueryDefinition("select top 100 * from Employees");
+
+            using (FeedIterator<EmployeeEntity> feedIterator = this._myDb.GetItemQueryIterator<EmployeeEntity>(
+                queryDefinition,
+                null))
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    foreach (var item in await feedIterator.ReadNextAsync())
+                    {
+                        lResults.Add(item);
+                    }
+                }                
+            }
+
+            return lResults;
         }
     }
 }

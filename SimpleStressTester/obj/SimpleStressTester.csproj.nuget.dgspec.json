@@ -114,7 +114,7 @@
         "netcoreapp3.1": {
           "targetAlias": "netcoreapp3.1",
           "dependencies": {
-            "Microsoft.ApplicationInsights": {
+            "Microsoft.ApplicationInsights.WorkerService": {
               "target": "Package",
               "version": "[2.20.0, )"
             }
