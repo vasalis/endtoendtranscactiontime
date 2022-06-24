@@ -22,16 +22,16 @@ namespace SimpleStressTester
             Console.WriteLine("----- Simple Stress Tester -----");
             Console.WriteLine("Initializing...");
 
-            int lEmployeesToCreate = 20000;
+            int lEmployeesToCreate = 50000;
 
             //string lUseCaseName = "Localhost Test";
             //string lBaseUrl = "http://localhost:7258/api";            
 
-            string lUseCaseName = "AzFunctions Test";
-            string lBaseUrl = "https://endtoendtranscactiontime.azurewebsites.net/api";
+            //string lUseCaseName = "AzFunctions Test";
+            //string lBaseUrl = "https://endtoendtranscactiontime.azurewebsites.net/api";
 
-            //string lUseCaseName = "Azure Front Door Test";
-            //string lBaseUrl = "https://endtoendfun-c2evacc6gge2feea.z01.azurefd.net/api";
+            string lUseCaseName = "Azure Front Door Test";
+            string lBaseUrl = "https://endtoendfun-c2evacc6gge2feea.z01.azurefd.net/api";
 
 
             string lUseCaseInitTestUrl = $"{lBaseUrl}/InitTest";
@@ -64,23 +64,24 @@ namespace SimpleStressTester
             // Obtain TelemetryClient instance from DI, for additional manual tracking or to flush.
             var lTelemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
 
-            var lHttpClient = new HttpClient();
-
-            await InitTest(lHttpClient, lUseCaseInitTestUrl);
-
-            var lEmployees = CreateNewEmployees(lEmployeesToCreate);
-
-            using (var lTel = lTelemetryClient.StartOperation<DependencyTelemetry>("RUN POST EMPL TEST"))
+            using (var lHttpClient = new HttpClient())
             {
-                //RunPostEmployeesTest(lUseCasePostUrl, lEmployees, lUseCaseName, lTelemetryClient, lHttpClient);
-            }
+                await InitTest(lHttpClient, lUseCaseInitTestUrl);
 
-            using (var lTel = lTelemetryClient.StartOperation<DependencyTelemetry>("RUN GET EMPL TEST"))
-            {
-                RunGetEmployeesTest(lUseCaseGetUrl, lEmployeesToCreate, lUseCaseName, lTelemetryClient, lHttpClient);
-            }
+                var lEmployees = CreateNewEmployees(lEmployeesToCreate);
 
-            // await FinishTest(lHttpClient, lUseCaseFinishUrl);
+                using (var lTel = lTelemetryClient.StartOperation<DependencyTelemetry>($"{lUseCaseName}[{GetTasksCount()}] - POST TEST"))
+                {
+                    RunPostEmployeesTest(lUseCasePostUrl, lEmployees, lUseCaseName, lTelemetryClient, lHttpClient);
+                }
+
+                using (var lTel = lTelemetryClient.StartOperation<DependencyTelemetry>($"{lUseCaseName}[{GetTasksCount()}] - GET TEST"))
+                {
+                    RunGetEmployeesTest(lUseCaseGetUrl, lEmployeesToCreate, lUseCaseName, lTelemetryClient, lHttpClient);
+                }
+
+                //await FinishTest(lHttpClient, lUseCaseFinishUrl);
+            }
         }
 
         private static List<StringContent> CreateNewEmployees(int aEmployeesToCreate)
@@ -115,7 +116,7 @@ namespace SimpleStressTester
             var lRequestTime = Stopwatch.StartNew();
             PostEmployeesWithTasks(aEndPointUrl, aEmployees, aTelemetryClient, aHttpClient);
             lRequestTime.Stop();
-            Console.WriteLine($"POST finished in {lRequestTime.ElapsedMilliseconds} msecs.");
+            Console.WriteLine($"POST finished in {lRequestTime.ElapsedMilliseconds / 1000} secs ({lRequestTime.ElapsedMilliseconds} msecs).");
         }
 
         private static void RunGetEmployeesTest(string aEndPointUrl, int aIterations, string aUseCaseName, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
@@ -124,7 +125,7 @@ namespace SimpleStressTester
             var lRequestTime = Stopwatch.StartNew();
             GetEmployeesAsync(aEndPointUrl, aIterations, aTelemetryClient, aHttpClient);
             lRequestTime.Stop();
-            Console.WriteLine($"GET finished in {lRequestTime.ElapsedMilliseconds} msecs.");
+            Console.WriteLine($"GET finished in {lRequestTime.ElapsedMilliseconds/1000} secs ({lRequestTime.ElapsedMilliseconds} msecs).");
         }
 
         private static async Task InitTest(HttpClient aHttpClient, String aUrl)
@@ -178,7 +179,7 @@ namespace SimpleStressTester
 
         private static void PostEmployeesWithTasks(string aEndPointUrl, List<StringContent> aEmployees, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
         {
-            int lTasksCount = 100;
+            int lTasksCount = GetTasksCount();
             int lIndex = 0;
 
             List<StringContent[]> lBigList = new List<StringContent[]>();
@@ -202,18 +203,18 @@ namespace SimpleStressTester
             {
                 lTasks.Add(Task.Run(async () =>
                 {
-                    try
+                    foreach (var lEmployee in lSub)
                     {
-                        foreach(var lEmployee in lSub)
-                        {   
+                        try
+                        {
                             var result = await aHttpClient.PostAsync(aEndPointUrl, lEmployee);
                         }
-                    }
-                    catch (Exception ex)
-                    {   
-                        aTelemetryClient.TrackException(ex);
-                        Console.WriteLine($"Post failed: {ex.Message}");
-                    }
+                        catch (Exception ex)
+                        {
+                            aTelemetryClient.TrackException(ex);
+                            Console.WriteLine($"Post failed: {ex.Message}");
+                        }
+                    }                   
                 }));
             }
             
@@ -229,7 +230,7 @@ namespace SimpleStressTester
 
         private static void GetEmployeesAsync(string aEndPointUrl, int aIterations, TelemetryClient aTelemetryClient, HttpClient aHttpClient)
         {
-            int lTasksCount = 100;
+            int lTasksCount = GetTasksCount();
             int lIndex = 0;
 
             List<int[]> lBigList = new List<int[]>();
@@ -253,18 +254,19 @@ namespace SimpleStressTester
             {
                 lTasks.Add(Task.Run(async () =>
                 {
-                    try
+                    foreach (var lEmployee in lSub)
                     {
-                        foreach (var lEmployee in lSub)
+                        try
                         {
                             var result = await aHttpClient.GetAsync(aEndPointUrl);
                         }
+                        catch (Exception ex)
+                        {
+                            aTelemetryClient.TrackException(ex);
+                            Console.WriteLine($"Get failed: {ex.Message}");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        aTelemetryClient.TrackException(ex);
-                        Console.WriteLine($"Get failed: {ex.Message}");
-                    }
+                    
                 }));
             }
 
@@ -276,6 +278,11 @@ namespace SimpleStressTester
             {
                 Console.WriteLine($"Wait failed: {ex.Message}");
             }                        
+        }
+
+        private static int GetTasksCount()
+        {
+            return 600;
         }
     }
 }
