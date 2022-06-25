@@ -40,7 +40,7 @@ namespace EndToEndTranscactionTime
                 // Autoscale throughput settings
                 // Set autoscale max RU/s
                 // WARNING: Be aware of MAX RU!!!
-                ThroughputProperties lAutoscaleThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(10000);
+                ThroughputProperties lAutoscaleThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(20000);
 
                 //Create the database with autoscale enabled
                 lClient.CreateDatabaseIfNotExistsAsync(lCosmosDbName, throughputProperties: lAutoscaleThroughputProperties).Wait();

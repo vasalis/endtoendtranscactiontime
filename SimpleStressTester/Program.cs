@@ -30,8 +30,11 @@ namespace SimpleStressTester
             //string lUseCaseName = "AzFunctions Test";
             //string lBaseUrl = "https://endtoendtranscactiontime.azurewebsites.net/api";
 
-            string lUseCaseName = "Azure Front Door Test";
-            string lBaseUrl = "https://endtoendfun-c2evacc6gge2feea.z01.azurefd.net/api";
+            //string lUseCaseName = "Cache - Azure Front Door Test";
+            //string lBaseUrl = "https://endtoendfunwithcache-d0chdsdab5azd4cc.z01.azurefd.net/api";
+
+            string lUseCaseName = "NoCache - Azure Front Door Test";
+            string lBaseUrl = "https://endtoendnocache-gghpgzfjd2h4fubu.z01.azurefd.net/api";
 
 
             string lUseCaseInitTestUrl = $"{lBaseUrl}/InitTest";
@@ -40,7 +43,7 @@ namespace SimpleStressTester
             string lUseCaseGetUrl = $"{lBaseUrl}/GetEmployees";
 
 
-            Console.WriteLine($"Use case is: {lUseCaseName}, url is: {lBaseUrl}");
+            Console.WriteLine($"[Tasks: {GetTasksCount()}] Use case is: {lUseCaseName}, url is: {lBaseUrl}");
 
             // Create the DI container.
             IServiceCollection services = new ServiceCollection();
@@ -282,7 +285,7 @@ namespace SimpleStressTester
 
         private static int GetTasksCount()
         {
-            return 600;
+            return 100;
         }
     }
 }
