@@ -30,11 +30,11 @@ namespace SimpleStressTester
             //string lUseCaseName = "AzFunctions Test";
             //string lBaseUrl = "https://endtoendtranscactiontime.azurewebsites.net/api";
 
-            //string lUseCaseName = "Cache - Azure Front Door Test";
-            //string lBaseUrl = "https://endtoendfunwithcache-d0chdsdab5azd4cc.z01.azurefd.net/api";
+            string lUseCaseName = "Cache - Azure Front Door Test";
+            string lBaseUrl = "https://endtoendfunwithcache-d0chdsdab5azd4cc.z01.azurefd.net/api";
 
-            string lUseCaseName = "NoCache - Azure Front Door Test";
-            string lBaseUrl = "https://endtoendnocache-gghpgzfjd2h4fubu.z01.azurefd.net/api";
+            //string lUseCaseName = "NoCache - Azure Front Door Test";
+            //string lBaseUrl = "https://endtoendnocache-gghpgzfjd2h4fubu.z01.azurefd.net/api";
 
 
             string lUseCaseInitTestUrl = $"{lBaseUrl}/InitTest";
@@ -83,7 +83,7 @@ namespace SimpleStressTester
                     RunGetEmployeesTest(lUseCaseGetUrl, lEmployeesToCreate, lUseCaseName, lTelemetryClient, lHttpClient);
                 }
 
-                //await FinishTest(lHttpClient, lUseCaseFinishUrl);
+                await FinishTest(lHttpClient, lUseCaseFinishUrl);
             }
         }
 
@@ -150,6 +150,8 @@ namespace SimpleStressTester
         private static async Task FinishTest(HttpClient aHttpClient, String aUrl)
         {
             Console.WriteLine($"Finishing test -> Deleting container...");
+
+            Thread.Sleep(5000);
 
             var lResponse = await aHttpClient.GetAsync(aUrl);
 

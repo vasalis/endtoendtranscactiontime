@@ -20,6 +20,8 @@ namespace EndToEndTranscactionTime
                 loggingBuilder.AddFilter(level => true);
             });
 
+            builder.Services.AddApplicationInsightsTelemetryWorkerService("0c23ddee-e256-4a16-ac83-097e3df1aecb");
+
             builder.Services.AddSingleton<Tuple<Database, Container>>(GetContainer);
         }
 
