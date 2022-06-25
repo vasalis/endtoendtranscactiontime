@@ -15,12 +15,15 @@ namespace EndToEndTranscactionTime
     public class EmployeesFun
     {
         private readonly ILogger<EmployeesFun> _logger;
-        private readonly Container _myDb;
+        private readonly Database _myDb;
+        private readonly Container _myContainer;
+        
 
-        public EmployeesFun(ILogger<EmployeesFun> logger, Container aDbContainer)
+        public EmployeesFun(ILogger<EmployeesFun> logger, Tuple<Database, Container> aDbAndContainer)
         {
             _logger = logger;
-            _myDb = aDbContainer;
+            _myDb = aDbAndContainer.Item1;
+            _myContainer = aDbAndContainer.Item2;
         }
 
         [FunctionName("InitTest")]
@@ -39,8 +42,8 @@ namespace EndToEndTranscactionTime
                     DateOfBirth = DateTime.Now
                 };
 
-                await _myDb.CreateItemAsync(lEmployee);
-                var lResult = await this._myDb.ReadItemAsync<EmployeeEntity>(lEmployeeId, new PartitionKey(lEmployeeId));                
+                await _myContainer.CreateItemAsync(lEmployee);
+                var lResult = await this._myContainer.ReadItemAsync<EmployeeEntity>(lEmployeeId, new PartitionKey(lEmployeeId));                
 
                 return new OkObjectResult("Ok");
             }
@@ -59,9 +62,9 @@ namespace EndToEndTranscactionTime
         {
             try
             {
-                await _myDb.DeleteContainerAsync();
+                await _myDb.DeleteAsync();
 
-                return new OkObjectResult("Container deleted ok.");
+                return new OkObjectResult("Db deleted ok.");
             }
             catch (Exception ex)
             {
@@ -82,7 +85,7 @@ namespace EndToEndTranscactionTime
 
                 var lEmployee = JsonConvert.DeserializeObject<EmployeeEntity>(lRrequestBody);
 
-                await _myDb.CreateItemAsync(lEmployee);
+                await _myContainer.CreateItemAsync(lEmployee);
 
                 return new OkObjectResult("Ok");
             }
@@ -116,7 +119,7 @@ namespace EndToEndTranscactionTime
 
             QueryDefinition queryDefinition = new QueryDefinition("select top 100 * from Employees");
 
-            using (FeedIterator<EmployeeEntity> feedIterator = this._myDb.GetItemQueryIterator<EmployeeEntity>(
+            using (FeedIterator<EmployeeEntity> feedIterator = this._myContainer.GetItemQueryIterator<EmployeeEntity>(
                 queryDefinition,
                 null))
             {

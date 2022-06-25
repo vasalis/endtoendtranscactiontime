@@ -20,10 +20,10 @@ namespace EndToEndTranscactionTime
                 loggingBuilder.AddFilter(level => true);
             });
 
-            builder.Services.AddSingleton<Container>(GetContainer);
+            builder.Services.AddSingleton<Tuple<Database, Container>>(GetContainer);
         }
 
-        private Container GetContainer(IServiceProvider options)
+        private Tuple<Database, Container> GetContainer(IServiceProvider options)
         {
             try
             {
@@ -40,16 +40,18 @@ namespace EndToEndTranscactionTime
                 // Autoscale throughput settings
                 // Set autoscale max RU/s
                 // WARNING: Be aware of MAX RU!!!
-                ThroughputProperties lAutoscaleThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(20000);
+                ThroughputProperties lThroughputProperties = ThroughputProperties.CreateManualThroughput(20000);
 
                 //Create the database with autoscale enabled
-                lClient.CreateDatabaseIfNotExistsAsync(lCosmosDbName, throughputProperties: lAutoscaleThroughputProperties).Wait();
+                lClient.CreateDatabaseIfNotExistsAsync(lCosmosDbName, throughputProperties: lThroughputProperties).Wait();
                 var lDb = lClient.GetDatabase(lCosmosDbName);
 
                 ContainerProperties lAutoscaleContainerProperties = new ContainerProperties(lCosmosDbContainerName, lCosmosDbPartionKey);
-                lDb.CreateContainerIfNotExistsAsync(lAutoscaleContainerProperties, lAutoscaleThroughputProperties);
+                lDb.CreateContainerIfNotExistsAsync(lAutoscaleContainerProperties, lThroughputProperties);
 
-                return lDb.GetContainer(lCosmosDbContainerName);
+                var lContainer = lDb.GetContainer(lCosmosDbContainerName);
+
+                return new Tuple<Database, Container>(lDb, lContainer);
             }
             catch (Exception ex)
             {

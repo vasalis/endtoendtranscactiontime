@@ -285,7 +285,7 @@ namespace SimpleStressTester
 
         private static int GetTasksCount()
         {
-            return 100;
+            return 500;
         }
     }
 }
