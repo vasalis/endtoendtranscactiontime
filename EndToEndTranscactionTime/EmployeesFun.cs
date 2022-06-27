@@ -28,7 +28,7 @@ namespace EndToEndTranscactionTime
 
         [FunctionName("InitTest")]
         public async Task<IActionResult> RunInitTest(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
             ILogger log)
         {
             try
